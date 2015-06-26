@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+
+	<comment>shopAnalyse </comment>
+	<!--忠： 销售分析查询-->
+	<entry key="shopAnalyse.CheckResult">
+		SELECT
+		b.upccode,a.material_number,b.sales_time,
+		SUM(IFNULL(b.sales_number,0))AS sales_number,
+		TRUNCATE(AVG(b.avg_current_price/a.tag_price)*100,2)AS dis_count,
+		SUM(IFNULL(b.sales_amount,0))AS sales_sum ,
+		TRUNCATE(AVG( IFNULL(b.sales_number/b.arrive_number,0) )*100,2) AS out_sales_rate ,
+		a.product_platform_id,a.tag_price,a.product_type,a.product_sex,a.product_lf_pf,a.quater
+		,
+		TRUNCATE(SUM(IFNULL(b.sales_amount,0))/(DATEDIFF({'#endTime#'},{'#beginTime#'})+1),2)
+		AS daysx
+		FROM
+		( SELECT
+		u.upccode,u.sales_time,u.sales_number,u.avg_current_price,u.sales_amount,u.arrive_number
+		FROM sales_stock_details u WHERE
+		{ u.sales_time &gt;='#beginTime#' }
+		{ AND u.sales_time &lt;='#endTime#' }
+		# { AND u.avg_current_price &gt;=#beginPrice# }
+		# { AND u.avg_current_price &lt;=#endPrice# }
+		{ AND u.brand_id=#brandId# }
+		ORDER BY u.sales_time DESC) b
+		LEFT JOIN product_info a
+		ON b.upccode=a.product_upccode
+		WHERE 1=1
+		{ AND a.quater='#quater#' }
+		{ AND a.product_lf_pf='#productLfPf#' }
+		{ AND a.product_platform_id LIKE '%#productPlatformId#%' }
+		{ AND a.tag_price &gt;=#beginPrice# }
+		{ AND a.tag_price &lt;=#endPrice# }
+		{ AND a.material_number LIKE '%#materialNumber#%' }
+		GROUP BY b.upccode
+		{order by #orderField#}{ #orderDirection# }
+	</entry>
+
+
+
+	<!-- top10,没有第一个记数值与最后一个占比-->
+	<entry key="shopAnalyse.top10">
+		SELECT
+		b.upccode,a.material_number,a.inline_or2ndline AS line ,a.product_lf_pf,a.quater,
+		b.avg_current_price,SUM(IFNULL(b.sales_number,0))AS sales_number,
+		SUM(IFNULL(b.sales_amount,0)) AS sales_sum
+		FROM ( SELECT u.upccode,u.avg_current_price,u.sales_number,u.sales_amount
+		FROM sales_stock_details u
+		WHERE
+		{ u.sales_time &gt;='#beginTime#' }
+		{ AND u.sales_time &lt;='#endTime#' }
+		# { AND u.avg_current_price &gt;=#beginPrice# }
+		# { AND u.avg_current_price &lt;=#endPrice# }
+		{ AND u.brand_id=#brandId# }
+		ORDER BY u.sales_time) b
+		LEFT JOIN product_info a
+		ON b.upccode=a.product_upccode
+		WHERE 1=1
+		{ AND a.brand_id = #brandId# }
+		{ AND a.quater='#quater#' }
+		{ AND a.product_lf_pf='#productLfPf#' }
+		{ AND a.product_platform_id LIKE '%#productPlatformId#%' }
+		{ AND a.tag_price &gt;=#beginPrice# }
+		{ AND a.tag_price &lt;=#endPrice# }
+		{ AND a.material_number LIKE '%#materialNumber#%' }
+		GROUP BY b.upccode
+		ORDER BY SUM(IFNULL(b.sales_amount,0))DESC
+		LIMIT 0,10;
+		    
+	</entry>
+
+
+
+	<!-- 销售日报,没有最后一个占比-->
+	<entry key="shopAnalyse.getShopDay">
+		SELECT
+		b.sales_time, b.upccode,a.material_number,a.inline_or2ndline AS line ,
+		a.product_lf_pf,a.quater,b.avg_current_price,
+		SUM(IFNULL(b.sales_number,0))AS sales_number,
+		SUM(IFNULL(b.sales_amount,0)) AS sales_sum
+		FROM (
+		SELECT
+		u.upccode,u.avg_current_price,u.sales_number,u.sales_amount,u.sales_time
+		FROM sales_stock_details u
+		WHERE
+		{ u.sales_time &gt;='#beginTime#' }
+		{ AND u.sales_time &lt;='#endTime#' }
+		# { AND u.avg_current_price &gt;=#beginPrice# }
+		# { AND u.avg_current_price &lt;=#endPrice# }
+		{ AND u.brand_id=#brandId# }
+		ORDER BY u.sales_time) b
+		LEFT JOIN product_info a
+		ON b.upccode=a.product_upccode
+		WHERE 1=1
+		{ AND a.brand_id = #brandId# }
+		{ AND a.quater='#quater#' }
+		{ AND a.product_lf_pf='#productLfPf#' }
+		{ AND a.product_platform_id LIKE '%#productPlatformId#%' }
+		{ AND a.tag_price &gt;=#beginPrice# }
+		{ AND a.tag_price &lt;=#endPrice# }
+		{ AND a.material_number LIKE '%#materialNumber#%' }
+		GROUP BY b.upccode,b.sales_time
+		ORDER BY b.sales_time ASC
+		LIMIT 0,300;
+	</entry>
+
+
+
+	<!-- 月报   条件：时间-->
+	<entry key="shopAnalyse.getShopMonth">
+		SELECT
+		{#monthlyFieldName#,} DATE_FORMAT(b.sales_time,'%m') AS time_month,
+		DATE_FORMAT(b.sales_time,'%y') time_year,
+		SUM(IFNULL(b.sales_number,0))AS all_sales,
+		SUM(IFNULL(b.sales_amount,0)) AS all_amount
+		FROM sales_stock_details b
+		LEFT JOIN product_info a
+		ON b.upccode=a.product_upccode
+		WHERE b.sales_time &gt;= '{#beginTime#}'
+		AND b.sales_time &lt;'{#endTime#}'
+		{ and b.brand_id = #brandId# }
+		{ AND a.quater='#_quater#' }
+		{ AND a.product_lf_pf='#productLfPf#' }
+		{ AND a.product_platform_id LIKE '%#productPlatformId#%' }
+		{ AND a.tag_price &gt;=#beginPrice# }
+		{ AND a.tag_price &lt;=#endPrice# }
+		{ AND a.material_number LIKE '%#materialNumber#%' }
+		{ AND #monthlyFieldName# IS NOT NULL}
+		{ AND #monthlyFieldName# !="" }
+		GROUP BY DATE_FORMAT(b.sales_time,'%Y%m'){,#monthlyFieldName#}
+		ORDER
+		BY DATE_FORMAT(b.sales_time,'%Y%m') ASC
+	</entry>
+	
+	<!-- add 2014-10-16 月度分析 生成图表，查询SQL begin-->
+	<entry key="shopAnalyse.shop.month.chart.sql">
+		SELECT
+		{#monthlyFieldName#,}SUM(IFNULL(b.sales_number,0))AS all_sales,
+		SUM(IFNULL(b.sales_amount,0)) AS all_amount,
+		DATE_FORMAT(b.sales_time,'{#formateDate#}') as formate_sales_time
+		FROM sales_stock_details b LEFT JOIN product_info a ON b.upccode=a.product_upccode
+		WHERE DATE_FORMAT(b.sales_time,'{#formateDate#}') &gt;= DATE_FORMAT('{#beginTime#}','{#formateDate#}')
+		AND DATE_FORMAT(b.sales_time,'{#formateDate#}') &lt; DATE_FORMAT('{#endTime#}','{#formateDate#}')
+		{ and b.brand_id = #brandId# }
+		{ AND a.quater='#_quater#' }
+		{ AND a.product_lf_pf='#productLfPf#' }
+		{ AND a.product_platform_id LIKE '%#productPlatformId#%' }
+		{ AND a.tag_price &gt;=#beginPrice# }
+		{ AND a.tag_price &lt;=#endPrice# }
+		{ AND a.material_number LIKE '%#materialNumber#%' }
+		{ AND #monthlyFieldName# IS NOT NULL}
+		{ AND #monthlyFieldName# !="" }
+		GROUP BY formate_sales_time {,#monthlyFieldName#}
+		ORDER BY formate_sales_time ASC
+	</entry>
+	<!-- add 2014-10-16 月度分析 生成图表，查询SQL begin-->
+
+
+	<!--销售分析种类，系列，line ，性别(导出字段)（单独）-->
+	<entry key="shopAnalyse.productType">
+		SELECT
+		{ a.#ShopAnaylseType#} ,SUM(IFNULL(b.sales_number,0))AS sales_number,
+		(SUM(IFNULL(b.sales_number,0))*a.tag_price) AS sales_tag_money ,
+		SUM(IFNULL(b.sales_amount,0))AS sales_sum FROM
+		( SELECT u.upccode,u.sales_time,u.sales_number,u.sales_amount
+		FROM sales_stock_details u WHERE
+		{ u.sales_time &gt;='#beginTime#' }
+		{ AND u.sales_time &lt;='#endTime#' }
+		{ AND u.brand_id=#brandId# }
+		) b
+		LEFT JOIN product_info a
+		ON b.upccode=a.product_upccode
+		WHERE
+		{ a.#ShopAnaylseType# IS NOT NULL}
+		{ AND a.#ShopAnaylseType# !=""}
+		{ AND a.quater='#quater#' }
+		{ AND a.product_lf_pf='#productLfPf#' }
+		{ AND a.product_platform_id LIKE '%#productPlatformId#%' }
+		{ AND a.tag_price &gt;=#beginPrice# }
+		{ AND a.tag_price &lt;=#endPrice# }
+		{ AND a.material_number LIKE '%#materialNumber#%' }
+		{ GROUP BY  a.#ShopAnaylseType#}  
+	</entry>
+
+
+	<!--销售分析Q季（单独） -->
+	<entry key="shopAnalyse.productQuater">
+		SELECT
+		a.quater ,c.now_month_sales_number AS now_month_sales_number,
+		SUM(IFNULL(b.sales_number,0))AS all_sales_sum,
+		TRUNCATE(AVG( IFNULL(b.sales_number/b.arrive_number,0) )*100,2) AS rate_out ,
+		SUM(IFNULL(b.arrive_number,0)) AS arrive_number
+		FROM
+		( SELECT
+		u.upccode,u.sales_time,u.sales_number,u.sales_amount,u.arrive_number
+		FROM sales_stock_details u WHERE
+		{ u.sales_time &gt;='#beginTime#' }
+		{ AND u.sales_time &lt;='#endTime#' }
+		{ AND u.brand_id=#brandId# }
+		) b
+		LEFT JOIN product_info a
+		ON b.upccode=a.product_upccode
+		LEFT JOIN
+		(SELECT k.upccode,SUM(IFNULL(k.sales_number,0))AS now_month_sales_number
+		FROM sales_stock_details k WHERE
+		{ k.sales_time &gt;='#nowMonthBegin#' }
+		{ AND k.sales_time &lt;='#nowTimeEnd#' }
+		{ AND k.brand_id=#brandId# }
+		GROUP BY k.upccode
+		)c
+		ON b.upccode=c.upccode
+		WHERE
+		a.quater IS NOT NULL AND a.quater!=""
+		{ AND a.brand_id = #brandId# }
+		{ AND a.quater='#quater#' }
+		{ AND a.product_lf_pf='#productLfPf#' }
+		{ AND a.product_platform_id LIKE '%#productPlatformId#%' }
+		{ AND a.tag_price &gt;=#beginPrice# }
+		{ AND a.tag_price &lt;=#endPrice# }
+		{ AND a.material_number LIKE '%#materialNumber#%' }
+		GROUP BY a.quater
+	</entry>
+
+
+
+	<!-- 销售分析 +分类： 种类，Q季，系列，一线还是二线，性别，条件：价格，时间,并排好一级分类-->
+	<entry key="shopAnalyse.productGroupType">
+		SELECT
+		a.product_type,
+		a.quater,
+		a.series,
+		a.inline_or2ndline,
+		a.product_sex,
+		SUM(IFNULL(k.sales_number,0)) AS sales_number
+		FROM sales_stock_details k
+		LEFT JOIN product_info a
+		ON k.upccode=a.product_upccode
+		WHERE
+		{ k.sales_time &gt;='#beginTime#' }
+		{ AND k.sales_time &lt;='#endTime#' }
+		{ AND k.brand_id=#brandId# }
+		{ AND a.quater='#_quater#' }
+		{ AND a.product_lf_pf='#productLfPf#' }
+		{ AND a.product_platform_id LIKE '%#productPlatformId#%' }
+		{ AND a.tag_price &gt;=#beginPrice# }
+		{ AND a.tag_price &lt;=#endPrice# }
+		{ AND a.material_number LIKE '%#materialNumber#%' }
+
+		{AND a.#product_type# IS NOT NULL}
+		{AND a.#quater# IS NOT NULL}
+		{AND a.#series# IS NOT NULL}
+		{AND a.#inline_or2ndline# IS NOT NULL}
+		{AND a.#product_sex# IS NOT NULL }
+
+		{AND a.#product_type# !=""}
+		{AND a.#quater# !=""}
+		{AND a.#series# !=""}
+		{AND a.#inline_or2ndline# !=""}
+		{AND a.#product_sex# !="" }
+
+		GROUP BY
+		{a.#product_type#,}
+		{a.#quater#,}
+		{a.#series#,}
+		{a.#inline_or2ndline#,}
+		{a.#product_sex#,}
+		{a.#FirstOrder#}
+		{ORDER BY a.#FirstOrder#}
+	</entry>
+
+</properties>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+
+	<comment>productinfo SQL</comment>
+	<entry key="productinfo.select.sql">
+		SELECT DISTINCT
+		{#fieldName#}
+		FROM
+		product_info 
+		WHERE 1 = 1
+		{ and brand_id = #brandId# } { and #fieldName# is not null}
+		{ and #fieldName# != ''}
+	</entry>
+
+
+</properties>

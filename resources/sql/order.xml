@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+
+	<comment>order form manager</comment>
+	<entry key="order.form.page.sql">
+		SELECT 
+		  o.id,
+		  o.upccode,
+		  o.material_number,
+		  o.platform_id,
+		  o.order_number,
+		  o.order_amount,
+		  o.arrival_number,
+		  s.current_stock_number,
+		  s.available_stock_number,
+		  p.product_name,
+		  p.quater,
+		  p.product_type,
+		  p.tag_price,
+		  ROUND((
+		     IFNULL(s.available_stock_number, 0) * IFNULL(p.tag_price, 0)
+		  ),2) AS available_stock_money 
+		FROM
+		  order_form_info o 
+		  LEFT JOIN stock_info s 
+		    ON o.id = s.order_id 
+		  LEFT JOIN product_info p 
+		    ON s.upccode = p.product_upccode 
+			WHERE 1 = 1 
+			{AND p.product_name LIKE '%#productName#%'}
+			{AND p.quater = '#quater#'}
+			{AND p.product_type LIKE '%#productType#%'}
+			{AND o.upccode LIKE '%#upccode#%'}
+			{AND o.platform_id LIKE '%#platformId#%'}
+			{AND o.material_number LIKE '%#materialNumber#%'}
+			{AND o.brand_id = #brandId#}
+			<!--  order by o.update_time desc -->
+			{order by #orderField#}{ #orderDirection# }
+	</entry>
+
+
+</properties>

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+	<comment>index SQL</comment>
+
+
+	<!--订货数量+到货数量-->
+	<entry key="index.queryDayOrderArriver">
+		SELECT
+		IFNULL(SUM((CASE WHEN (`stock_log`.`opt_type` =
+		'1') THEN `stock_log`.`num` END)),0)
+		AS order_num,
+		IFNULL(SUM((CASE WHEN
+		(`stock_log`.`opt_type` = '1') THEN
+		`stock_log`.`price` END)),0) AS order_price,
+		IFNULL(SUM((CASE WHEN (`stock_log`.`opt_type` = '2') THEN
+		`stock_log`.`num` END)),0) AS arriver_num,
+		IFNULL(SUM((CASE WHEN
+		(`stock_log`.`opt_type` = '2') THEN
+		`stock_log`.`price` END)),0) AS arriver_price,
+		stock_log.brand_id
+		FROM
+		stock_log
+		LEFT JOIN product_info
+		ON
+		stock_log.brand_id = product_info.brand_id
+		AND
+		stock_log.material_number = product_info.material_number
+		AND
+		stock_log.upccode = product_info.product_upccode
+		WHERE
+
+		DATE(
+		DATE_FORMAT(stock_log.opt_time,'%Y-%m-%d') ) = CURDATE()
+		GROUP BY
+		stock_log.brand_id
+	</entry>
+
+
+	<!--销售数量+库存数量-->
+	<entry key="index.queryDaySellAndStock">
+		SELECT
+		SUM(sales_number) AS sale_num,
+		TRUNCATE(SUM(avg_current_price*sales_number),2) AS sale_amount,
+		SUM(stock_number) AS stock_number,
+		TRUNCATE(SUM(stock_number*avg_current_price),2) AS stock_amount,
+		brand_id
+		FROM
+		sales_stock_details
+		WHERE
+		DATE(
+		DATE_FORMAT(sales_stock_details.sales_time,'%Y-%m-%d') ) = CURDATE()
+		AND brand_id IS NOT NULL
+		GROUP BY
+		sales_stock_details.brand_id 
+	</entry>
+
+
+
+	<!--产品将到货-->
+	<entry key="index.arriveTip">
+		SELECT COUNT(1) AS arrive_num ,stock_log.brand_id FROM
+		stock_log
+		LEFT JOIN general_setting ON stock_log.brand_id =
+		general_setting.brand_id
+		WHERE
+		(TO_DAYS(stock_log.predict_arrive_time) -
+		TO_DAYS(NOW()) &lt; general_setting.arrival_day )
+		GROUP BY
+		stock_log.brand_id
+	</entry>
+
+
+
+	<!--
+		产品安全库存低于预设值 <entry key="index.securtySaleNums"> SELECT COUNT(1) AS
+		security_sale_nums,k.brand_id FROM ( SELECT (SELECT b.stock_number
+		FROM sales_stock_details b WHERE b.material_number = b.material_number
+		ORDER BY a.sales_time DESC LIMIT 1)
+		/(SUM(a.sales_number)/(TO_DAYS(NOW()) -
+		TO_DAYS(DATE_SUB(NOW(),INTERVAL 1 MONTH)))) AS security_sale_days
+		,a.brand_id FROM sales_stock_details a WHERE
+		DATE_FORMAT(a.sales_time,'%Y-%m-%d') BETWEEN DATE_SUB(NOW(),INTERVAL 1
+		MONTH) AND NOW() GROUP BY a.material_number ) k GROUP BY k.brand_id
+		</entry>
+	-->
+
+	<!--
+		产品库存周转低于预设值 <entry key="index.stockTurnoverNums"> SELECT COUNT(1) AS
+		turnover_num,k.brand_id FROM ( SELECT (SUM(a.sales_number)/7)/ (SELECT
+		b.stock_number FROM sales_stock_details b WHERE b.material_number =
+		b.material_number ORDER BY a.sales_time DESC LIMIT 1)*100 AS
+		stock_week, a.brand_id FROM sales_stock_details a WHERE
+		YEARWEEK(DATE_FORMAT(a.sales_time,'%Y-%m-%d')) = YEARWEEK(NOW())-1
+		GROUP BY a.material_number ) AS k LEFT JOIN general_setting g ON
+		k.brand_id = g.brand_id WHERE k.stock_week*100 &lt; g.turnover_day
+		GROUP BY k.brand_id </entry>
+	-->
+
+	<!--忠： 产品安全库存低于预设值-->
+	<entry key="index.securtySaleNums">
+		SELECT COUNT(1) AS security_sale_nums,c.brand_id
+		FROM (
+		SELECT (a.stock_number /(SUM(a.sales_number)/(TO_DAYS(NOW()) -
+		TO_DAYS(DATE_SUB(NOW(),INTERVAL 1 MONTH))))) AS security_sale_days ,
+		a.brand_id ,
+		a.material_number
+		FROM
+		(
+		SELECT
+		a.stock_number,a.material_number,a.brand_id
+		,a.sales_time,a.sales_number FROM sales_stock_details a WHERE
+		DATE_FORMAT(a.sales_time,'%Y-%m-%d')
+		BETWEEN DATE_SUB(NOW(),INTERVAL 1
+		MONTH) AND NOW() ORDER BY a.id DESC
+		) a
+		GROUP BY a.material_number ) c
+		LEFT JOIN general_setting b ON c.brand_id =b.brand_id
+		WHERE
+		c.security_sale_days &lt; b.secrity_sell
+		GROUP BY c.brand_id
+	</entry>
+
+
+
+
+	<!--忠：  产品库存周转低于预设值-->
+	<entry key="index.stockTurnoverNums">
+		SELECT COUNT(1) AS turnover_num,c.brand_id
+		FROM (
+		SELECT
+		(((SUM(a.sales_number)/7)/
+		a.stock_number)*100) AS stock_week ,
+		a.brand_id ,
+		a.material_number
+		FROM
+		(
+		SELECT
+		a.stock_number,a.material_number,a.brand_id
+		,a.sales_time,a.sales_number FROM sales_stock_details a WHERE
+		YEARWEEK(DATE_FORMAT(a.sales_time,'%Y-%m-%d')) = YEARWEEK(NOW())-1
+		ORDER BY a.sales_time DESC
+		) a
+		GROUP BY a.material_number
+		) c
+		LEFT JOIN
+		general_setting b ON c.brand_id =b.brand_id
+		WHERE
+		c.stock_week*100 &lt;
+		b.turnover_day
+		GROUP BY c.brand_id
+	   
+	 </entry>
+
+</properties>

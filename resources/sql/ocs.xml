@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+	<comment>ocs order data cleaning</comment>
+	<entry key="ocs.sales.order.sql">
+		<!-- SELECT
+			orders.order_id,
+			item.name,
+			p.product_id,
+			p.barcode,
+			SUM(item.nums) AS nums,
+	  		SUM(IFNULL(item.nums,0))* IFNULL(item.sale_price,0) AS amount,
+			item.sale_price,
+			item.bn AS material_number,
+			FROM_UNIXTIME(orders.createtime,'%Y-%m-%d') AS last_modified 
+			FROM
+			sdb_ome_orders orders
+			LEFT JOIN
+			sdb_ome_order_items item
+			ON orders.order_id = item.order_id
+			LEFT JOIN
+			sdb_ome_products p
+			ON item.product_id = p.product_id
+			WHERE 1=1 and orders.shop_id = '9347a34bd5af903514d40c375f71c3ed'
+			AND p.barcode != '' AND p.barcode IS NOT NULL
+			{AND orders.last_modified >= #startTime#}
+			{ AND orders.last_modified &lt;= #endTime# }
+			GROUP BY last_modified,p.barcode
+			 -->	
+			 SELECT 
+			  orders.order_id,
+			  item.name,
+			  p.product_id,
+			  p.barcode,
+			  p.brand_id,
+			  SUM(item.nums) AS nums,
+			  SUM(IFNULL(item.nums, 0)) * IFNULL(item.sale_price, 0) AS amount,
+			  item.sale_price,
+			  p.bn AS material_number,
+			  FROM_UNIXTIME(orders.createtime, '%Y-%m-%d') AS last_modified 
+			FROM
+			  sdb_ome_orders orders 
+			  LEFT JOIN sdb_ome_order_items item 
+			    ON orders.order_id = item.order_id 
+			  LEFT JOIN sdb_ome_products p 
+			    ON item.product_id = p.product_id 
+			WHERE 1 = 1 
+			  AND p.barcode != '' 
+			  AND p.barcode IS NOT NULL 
+			  {AND orders.last_modified >= #startTime#}
+			  { AND orders.last_modified &lt;= #endTime# }
+			GROUP BY last_modified, p.barcode,p.bn ,p.brand_id
+	</entry>
+
+	<entry key="ocs.return.order.sql">
+	<!-- 
+		SELECT
+		p.product_id,
+		p.barcode,
+		i.price as sale_price ,
+		i.bn AS material_number,
+		SUM(i.num) AS nums,
+  		SUM(IFNULL(i.num,0))* IFNULL(i.price,0) AS amount,
+		FROM_UNIXTIME(o.createtime,'%Y-%m-%d') AS last_modified ,
+		r.order_id
+		FROM
+		sdb_ome_reship r
+		LEFT JOIN sdb_ome_reship_items i
+		ON
+		r.reship_id = i.reship_id
+		LEFT JOIN sdb_ome_products p
+		ON i.product_id =
+		p.product_id
+		LEFT JOIN sdb_ome_orders o
+		ON r.order_id = o.order_id
+		WHERE i.return_type = 1 AND r.shop_id = '9347a34bd5af903514d40c375f71c3ed'
+		AND p.barcode != '' AND p.barcode IS NOT NULL
+		{ AND r.t_end >= #startTime#}
+		{ AND r.t_end &lt;= #endTime# }
+		GROUP BY last_modified,p.barcode
+		 -->
+		 
+		 SELECT
+			p.product_id,
+			p.barcode,
+			p.brand_id,
+			i.price as sale_price ,
+			p.bn AS material_number,
+			SUM(i.num) AS nums,
+	  		SUM(IFNULL(i.num,0))* IFNULL(i.price,0) AS amount,
+			FROM_UNIXTIME(o.createtime,'%Y-%m-%d') AS last_modified ,
+			r.order_id
+			FROM
+			sdb_ome_reship r
+			LEFT JOIN sdb_ome_reship_items i
+			ON r.reship_id = i.reship_id
+			LEFT JOIN sdb_ome_products p
+			ON i.product_id = p.product_id
+			LEFT JOIN sdb_ome_orders o
+			ON r.order_id = o.order_id
+			WHERE i.return_type = 1 
+			AND p.barcode != '' AND p.barcode IS NOT NULL
+			{ AND r.t_end >= #startTime#}
+			{ AND r.t_end &lt;= #endTime# }
+		GROUP BY last_modified,p.barcode,p.bn,p.brand_id		
+	</entry>
+	<entry key="ocs.stock.sql">
+		SELECT 
+		  SUM(i.nums) AS stock_nums,
+		  FROM_UNIXTIME(i.create_time,'%Y-%m-%d') AS stock_time,
+		  p.barcode,
+		  i.bn AS material_number,
+		 <!-- g.name,-->
+		  p.product_id,
+		  i.iostock_price,
+		  i.branch_id,
+		  p.brand_id
+		FROM
+		  sdb_ome_iostock i 
+		  LEFT JOIN sdb_ome_products p ON i.bn = p.bn
+		  <!-- LEFT JOIN sdb_ome_goods g ON p.goods_id = g.goods_id   -->
+		WHERE 
+		  <!-- type_id ：1-采购入库	 5-残损入库 -->
+		  i.type_id IN( 1 ,50)
+		  <!-- brand_id : 4:New Balance  -->
+		  <!--  AND g.brand_id = 4 -->
+		  { AND i.create_time >= #startTime#}
+		  { AND i.create_time &lt;= #endTime# }
+		 GROUP BY i.bn,p.barcode,p.brand_id
+	</entry>
+	
+	<!-- 查询 一段时间范围内的OCS订单数量 -->
+	<entry key="ocs.orders.range.total.count.sql">
+			SELECT 
+			  COUNT(orders.`order_bn`) 
+			FROM
+			  sdb_ome_orders orders 
+			WHERE orders.shop_id = '9347a34bd5af903514d40c375f71c3ed' 
+			  { AND orders.createtime >= #startTime#}
+			  { AND orders.createtime &lt;= #endTime# }
+	</entry>
+	
+	<!-- 查询 一段时间范围内的OCS订单信息-->
+	<entry key="ocs.orders.range.info.sql">
+			SELECT 
+			  orders.order_bn ,
+			  orders.order_id,
+			  orders.total_amount,
+			  FROM_UNIXTIME(orders.createtime,'%Y-%m-%d %T') AS create_time 
+			FROM
+			  sdb_ome_orders orders 
+			WHERE 1= 1
+			  { AND orders.shop_id = '#shopId#'}
+			  { AND orders.order_bn = '#orderBn#'}
+			  { AND orders.createtime >= #startTime#}
+			  { AND orders.createtime &lt;= #endTime# }
+			  
+	</entry>
+
+	
+</properties>

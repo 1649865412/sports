@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+
+	<comment>shopAnalyseTime </comment>
+
+	<!--忠： 销售分析时间维度查询 (R日M月Z季Y年)-->
+	<entry key="shopAnalyse.timeGetList">
+		SELECT
+		b.upccode,a.material_number,b.sales_time,SUM(IFNULL(b.sales_number,0))AS
+		sales_number,TRUNCATE(AVG(b.avg_current_price/a.tag_price)*100,2)AS
+		dis_count,
+		SUM(IFNULL(b.sales_amount,0))AS sales_sum ,a.series,a.product_brand,
+		a.quater,a.product_sex,a.tag_price FROM
+		(SELECT
+		u.upccode,u.sales_time,u.sales_number,u.avg_current_price,u.sales_amount
+		FROM sales_stock_details u WHERE
+		{ u.sales_time &gt;= '#beginTime#' }
+		{ AND u.sales_time &lt;= '#endTime#' }
+		{ AND u.brand_id = #brandId# }
+		ORDER BY u.sales_time
+		DESC) b
+		LEFT JOIN product_info a
+		ON b.upccode=a.product_upccode
+		WHERE 1=1
+		{ AND a.quater = '#quater#' }
+		{ AND a.series= '#series#' }
+		GROUP BY b.upccode 
+		{order by #orderField#}{ #orderDirection# }
+	</entry>
+
+
+
+	<!--获取所在时间范围内图的图例,（备注：只会出现一个字段，所以不用加逗号）-->
+	<entry key="shopAnalyse.salesDetailsTimeYZMRGroup">
+		SELECT
+		{b.#product_type# AS name}
+		{b.#quater# AS name}
+		{b.#series# AS name}
+		{b.#inline_or2ndline# AS name}
+		{b.#product_sex# AS name}
+		FROM
+		(SELECT
+		u.upccode
+		FROM
+		sales_stock_details u WHERE
+		{ u.sales_time &gt;= '#beginTime#' }
+		{ AND u.sales_time &lt;= '#endTime#' }
+		{ AND u.brand_id = #brandId# }
+		ORDER BY u.sales_time DESC
+		) a
+		LEFT JOIN product_info b
+		ON a.upccode=b.product_upccode
+		WHERE 1=1
+		{ AND b.#product_type# IS NOT
+		NULL}
+		{ AND b.#quater# IS NOT NULL}
+		{ AND b.#series# IS NOT NULL}
+		{ AND
+		b.#inline_or2ndline# IS NOT NULL}
+		{ AND b.#product_sex# IS NOT NULL}
+
+		{ AND b.#product_type# !=""}
+		{ AND b.#quater# !=""}
+		{ AND b.#series#
+		!=""}
+		{ AND b.#inline_or2ndline# !=""}
+		{ AND b.#product_sex# !=""}
+
+		GROUP BY
+		{b.#product_type#}
+		{b.#quater#}
+		{b.#series#}
+		{b.#inline_or2ndline#}
+		{b.#product_sex#}
+	</entry>
+
+
+
+	<!-- （新）销售分析时间维度图数据	  （备注：只会出现一个字段，所以不用加逗号）-->
+	<entry key="shopAnalyse.salesDetailsTimeYZMRPoint">
+		SELECT SUM(IFNULL(a.sales_number,0))AS sales_num_sum ,
+		{#condition#} AS
+		time_group,
+		{b.#product_type# AS name}
+		{b.#quater# AS name}
+		{b.#series#
+		AS name}
+		{b.#inline_or2ndline# AS name}
+		{b.#product_sex# AS name}
+		FROM
+		(SELECT u.upccode,u.sales_number,u.sales_time,u.stock_number
+		FROM
+		sales_stock_details u WHERE
+		{ u.sales_time &gt;= '#beginTime#' }
+		{ AND u.sales_time &lt;= '#endTime#' }
+		{ AND u.brand_id = #brandId# }
+		# AND DATE_FORMAT(u.sales_time,'%y')={#Ynum#}
+		ORDER BY u.sales_time DESC
+		) a
+		LEFT JOIN product_info b
+		ON a.upccode=b.product_upccode
+		WHERE 1=1
+		{ AND b.#product_type# IS NOT
+		NULL}
+		{ AND b.#quater# IS NOT NULL}
+		{ AND b.#series# IS NOT NULL}
+		{ AND
+		b.#inline_or2ndline# IS NOT NULL}
+		{ AND b.#product_sex# IS NOT NULL}
+
+		{ AND b.#product_type# !=""}
+		{ AND b.#quater# !=""}
+		{ AND b.#series#!=""}
+		
+		{ AND b.#inline_or2ndline# !=""}
+		{ AND b.#product_sex# !=""}
+
+		GROUP BY
+		{#condition#} ORDER BY
+		time_group ASC
+	</entry>
+
+
+</properties>

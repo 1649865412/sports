@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+	<comment>Inventory Analysis</comment>
+	<entry key="inventory.analysis.page.show">
+		SELECT 
+		  s.upccode as product_upccode,
+		  p.material_number,
+		  p.inline_or2ndline,
+		  p.product_lf_pf,
+		  p.product_brand,
+		  s.order_number,
+		  s.entering_time,
+		  <!--  最近一次到货数量 -->
+		  (
+			  SELECT s3.arrive_number  FROM sales_stock_details s3
+			   WHERE s3.upccode = s.upccode AND s3.material_number = s.material_number 
+			   AND s3.brand_id = s.brand_id
+			  <!--GROUP BY s3.upccode,s3.material_number-->
+			  ORDER BY s3.sales_time DESC LIMIT 0,1
+		  ) AS last_arrive_number,
+		  
+		    <!--  最近一次订货数量-->
+		  (
+		  	SELECT  s4.order_number  FROM sales_stock_details s4  
+		  	WHERE s4.upccode = s.upccode AND s4.material_number = s.material_number 
+		  	 AND s4.brand_id = s.brand_id
+		  	<!--GROUP BY s4.upccode, s4.material_number-->
+		 	 ORDER BY s4.sales_time DESC LIMIT 0,1
+		   ) AS last_order_number,
+		   
+		   <!-- 最近一次库存量 -->
+		  (
+		  	 SELECT s2.stock_number FROM sales_stock_details s2 
+		  	 WHERE  s2.upccode = s.upccode AND s2.material_number = s.material_number 
+		  	 AND s2.brand_id = s.brand_id
+			<!-- GROUP BY s2.upccode, s2.material_number -->  
+			  ORDER BY s2.sales_time DESC LIMIT 0,1
+		  ) AS last_stock_number,
+		  SUM(s.sales_number) as total_sales_number
+		FROM
+		  sales_stock_details s 
+		  LEFT JOIN product_info p 
+		    ON s.upccode = p.product_upccode 
+		  where 1=1
+		  <!--   AND s.upccode != '' AND s.upccode IS NOT NULL -->
+		  {AND s.brand_id = #brandId#}
+		  {AND s.sales_time >= '#startSalesTime#'}
+		  {AND s.sales_time &lt;= '#endSalesTime#'}
+		  {AND s.upccode = '#upccode#'}
+		  {AND p.material_number = '#materialNumber#'}
+		  {AND p.product_sex = '#productSex#'}
+		  {AND p.product_brand = '#productBrand#'}
+		  {AND p.inline_or2ndline = '#inlineOr2ndline#'}
+		  {AND p.series = '#series#'}
+		GROUP BY s.upccode,s.material_number,s.brand_id
+		{order by #orderField#}{ #orderDirection# }
+	</entry>
+
+	<entry key="stock.analysis.sql">
+	 SELECT 
+		{#groupByShowFieldNams#,}
+		SUM(IFNULL(s.stock_number,0)) as stock_number,
+   		SUM(IFNULL(p.tag_price,0)) as tag_price
+   		{#futureStockNumber#} 
+	FROM
+	  product_info p 
+	  LEFT JOIN sales_stock_details s 
+	    ON p.product_upccode = s.upccode 
+	 WHERE 1 = 1 
+		{AND p.#product_type# IS NOT NULL}
+		{AND p.#_quater# IS NOT NULL}
+		{AND p.#_series# IS NOT NULL}
+		{AND p.#inline_or2ndline# IS NOT NULL}
+		{AND p.#product_sex# IS NOT NULL }
+		{AND p.#product_type# !=''}
+		{AND p.#_quater# !=''}
+		{AND p.#_series# !=''}
+		{AND p.#inline_or2ndline# !=''}
+		{AND p.#product_sex# !='' }
+		{AND s.brand_id = #brandId#}
+		{AND s.sales_time >= '#startSalesTime#'}
+		{AND s.sales_time &lt;= '#endSalesTime#'}
+		{AND s.upccode = '#upccode#'}
+		{AND p.material_number = '#materialNumber#'}
+		{AND p.product_sex = '#productSex#'}
+		{AND p.product_brand = '#productBrand#'}
+		{AND p.inline_or2ndline = '#inlineOr2ndline#'}
+		{AND p.series = '#series#'}
+		{ GROUP BY #groupByFieldNams#}
+		<!--{p.#productType#,}
+		{p.#quater#,}
+		{p.#series#,}
+		{p.#inlineOr2ndline#,}
+		{p.#productSex#} -->
+		{ ORDER BY #groupByFieldNams#}
+	  	<!--{p.#productType#,}
+		{p.#quater#,}
+		{p.#series#,}
+		{p.#inlineOr2ndline#,}
+		{p.#productSex#}-->
+	</entry>
+	<entry key="stock.analysis.product_info.as.name.sql">
+		p.
+	</entry>
+	<entry key="stock.analysis.future.stock.number.sql">
+   		 ,(SELECT 
+   		  SUM(IFNULL(o.order_number, 0)) - SUM(IFNULL(o.arrival_number, 0)) 
+  		  FROM product_info p1 LEFT JOIN order_form_info o  ON o.upccode = p1.product_upccode 
+  		  WHERE 1 = 1 AND o.upccode is not null 
+  		  {AND DATE_FORMAT( o.predict_arrive_time, '%Y-%m') >= '#startPredictArriveTime#'} 
+    	  {AND DATE_FORMAT(o.predict_arrive_time,'%Y-%m') &lt;= '#endPredictArriveTime#'}
+    	  <!--{AND p.#product_type# IS NOT NULL}
+		  {AND p1.#_quater# IS NOT NULL}
+		  {AND p1.#_series# IS NOT NULL}
+		  {AND p1.#inline_or2ndline# IS NOT NULL}
+		  {AND p1.#product_sex# IS NOT NULL }
+		  {AND p1.#product_type# !=''}
+		  {AND p1.#_quater# !=''}
+		  {AND p1.#_series# !=''}
+		  {AND p1.#inline_or2ndline# !=''}
+		  {AND p1.#product_sex# !='' }
+		  {AND p1.material_number = p.#materialNumber#}
+		  {AND p1.product_sex = p.#productSex#}
+		  {AND p1.product_brand = p.#productBrand#}
+		  {AND p1.inline_or2ndline = p.#inline_or2ndline#}
+		  {AND p1.series = p.#_series#}--> 
+		  {AND p1.product_type = p.#product_type#}
+		  {AND p1.quater = p.#_quater#}
+		  {AND p1.series = p.#_series#}
+		  {AND p1.inline_or2ndline = p.#inline_or2ndline#}
+		  {AND p1.product_sex= p.#product_sex# }
+		  {AND p1.product_upccode = '#upccode#'}
+		  {AND p1.material_number = '#materialNumber#'}
+		  {AND p1.product_sex = '#productSex#'}
+		  {AND p1.product_brand = '#productBrand#'}
+		  {AND p1.inline_or2ndline = '#inlineOr2ndline#'}
+		  {AND p1.series = '#series#'}
+		  {AND p1.brand_id = #brandId#}
+    	  ) as future_stock_number 
+	</entry>
+</properties>

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+	<!--忠
+		（新）销售分析时间维度表格数据导出(Y年下的季度Z查询)(季度Z下的月查询)(月下的日查询)(日查询)(R日M月Z季Y年)
+		种类，Q季，系列，一线还是二线，性别， 销售数量，最新厍存，时间 语句块拼接
+	-->
+	
+	
+	<comment>shopAnalyseTimeGroup </comment>
+
+	<!--时间纵向分析分类顶部SQL-->
+	<entry key="shopAnalyse.salesDetailsTimeYZMRNEW.top">
+		SELECT
+		a.product_type,
+		a.quater,
+		a.series,
+		a.inline_or2ndline,
+		a.product_sex,
+		IFNULL(l.sales_number,0) AS
+		year_one_sales_number,
+		IFNULL(l.stock_number,0) AS
+		year_one_stock_number,
+	</entry>
+
+
+	<!--时间纵向分析分类+同比两年顶部SQL-->
+	<entry key="shopAnalyse.salesDetailsTimeYZMRNEW.Middletop">
+		IFNULL(h.sales_number,0) AS year_two_sales_number,
+		IFNULL(h.stock_number,0) AS year_two_stock_number,
+	</entry>
+
+
+	<!--时间纵向分析分类默认同比一年SQL  -->
+	<entry key="shopAnalyse.salesDetailsTimeYZMRNEW.Bottomtop">
+		SUM(IFNULL(u.sales_number,0)) AS sales_number,
+		SUM(IFNULL(u.stock_number,0)) AS stock_number
+		FROM
+		sales_stock_details u
+		LEFT JOIN product_info a
+		ON u.upccode = a.product_upccode
+		LEFT JOIN
+		(SELECT
+		a.product_type,
+		a.quater,
+		a.series,
+		a.inline_or2ndline,
+		a.product_sex,
+		SUM(IFNULL(u.sales_number,0)) AS sales_number,
+		SUM(IFNULL(u.stock_number,0)) AS stock_number,
+		u.upccode
+		FROM sales_stock_details u
+		LEFT JOIN product_info a
+		ON u.upccode = a.product_upccode
+		WHERE
+		{ u.sales_time &gt;= '#beginTimeOneYear#' }
+		{ AND u.sales_time &lt;=
+		'#endTimeOneYear#' }
+		{ AND u.brand_id = #brandId# }
+		GROUP
+		BY
+		{a.#product_type#,}
+		{a.#quater#,}
+		{a.#series#,}
+		{a.#inline_or2ndline#,}
+		{a.#product_sex#,}
+		{a.#FirstOrder#}
+		)l
+		ON (
+		{a.#FirstOrder#}=l.{#FirstOrder#}
+		{AND
+		a.#product_type#=l.product_type}
+		{AND a.#quater#=l.quater}
+		{AND
+		a.#series#=l.series}
+		{AND a.#inline_or2ndline#=l.inline_or2ndline}
+		{AND
+		a.#product_sex#=l.product_sex}
+		)	  
+	</entry>
+
+
+	<!--时间纵向分析分类同比两年连接SQL-->
+	<entry key="shopAnalyse.salesDetailsTimeYZMRNEW.middle">
+		LEFT JOIN
+		(SELECT
+		a.product_type,
+		a.quater,
+		a.series,
+		a.inline_or2ndline,
+		a.product_sex,
+		SUM(IFNULL(u.sales_number,0)) AS sales_number,
+		SUM(IFNULL(u.stock_number,0)) AS stock_number,
+		u.upccode
+		FROM sales_stock_details u
+		LEFT JOIN product_info a
+		ON u.upccode = a.product_upccode
+		WHERE
+		{ u.sales_time &gt;= '#beginTimeTwoYear#' }
+		{ AND u.sales_time &lt;=
+		'#endTimeTwoYear#' }
+		{ AND u.brand_id = #brandId# }
+		GROUP BY
+		{a.#product_type#,}
+		{a.#quater#,}
+		{a.#series#,}
+		{a.#inline_or2ndline#,}
+		{a.#product_sex#,}
+		{a.#FirstOrder#}
+		)h
+		ON (
+		{a.#FirstOrder#}=h.{#FirstOrder#}
+		{AND a.#product_type#=h.product_type}
+		{AND a.#quater#=h.quater}
+		{AND a.#series#=h.series}
+		{AND
+		a.#inline_or2ndline#=h.inline_or2ndline}
+		{AND
+		a.#product_sex#=h.product_sex}
+		)	     
+	</entry>
+
+
+
+	<!--时间纵向分析分类底部SQL-->
+	<entry key="shopAnalyse.salesDetailsTimeYZMRNEW.bottom">
+		WHERE
+		{ u.sales_time &gt;= '#beginTime#' }
+		{ AND u.sales_time &lt;=
+		'#endTime#' }
+		{ AND u.brand_id = #brandId# }
+		{AND
+		a.#product_type# IS NOT NULL}
+		{AND a.#quater# IS NOT NULL}
+		{AND
+		a.#series# IS NOT NULL}
+		{AND a.#inline_or2ndline# IS NOT NULL}
+		{AND
+		a.#product_sex# IS NOT NULL}
+
+		{AND a.#product_type# !=""}
+		{AND a.#quater# !=""}
+		{AND a.#series# !=""}
+		{AND
+		a.#inline_or2ndline# !=""}
+		{AND a.#product_sex# !=""}
+
+		GROUP BY
+		{a.#product_type#,}
+		{a.#quater#,}
+		{a.#series#,}
+		{a.#inline_or2ndline#,}
+		{a.#product_sex#,}
+		{a.#FirstOrder#}
+		{ORDER BY
+		a.#FirstOrder#}
+	</entry>
+
+
+</properties>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+
+	<comment>suitAnalyse </comment>
+	
+	
+
+	<!--忠： 库存分析时间维度查询 (R日M月Z季Y年)-->
+	<entry key="suitAnalyse.timeGetList">
+		SELECT
+		a.product_name,a.series,a.quater,a.product_type,b.order_number,b.arrive_number,
+		TRUNCATE(((IFNULL(b.sales_number,0)+IFNULL(b.stock_number,0))/b.order_number)*100,2)
+		AS arrive_rate,
+		TRUNCATE((IFNULL(b.sales_number,0)/IFNULL(b.stock_number,0))*100,2) AS
+		dynamic_rate ,
+		TRUNCATE((IFNULL(b.sales_number,0)/IFNULL(b.arrive_number,0))*100,2)
+		AS salesout_rate,
+		IFNULL(b.stock_number,0) AS stock_number
+		FROM
+		(
+		<!--求每个产品最新的进货，库存等数据-->
+		SELECT * FROM
+		(SELECT
+		b.upccode,
+		b.order_number,
+		b.arrive_number,
+		b.sales_number,
+		b.stock_number
+		FROM sales_stock_details b where
+		{ b.sales_time &gt;= '#beginTime#' }
+		{ AND b.sales_time &lt;= '#endTime#' }
+		{ AND b.brand_id = #brandId# }
+		ORDER BY b.sales_time DESC )u
+		GROUP BY u.upccode
+		)b
+		LEFT JOIN
+		product_info a
+		ON b.upccode=a.product_upccode
+		WHERE 1=1
+		{ AND a.quater = '#quater#' }
+		{ AND a.series= '#series#' }
+		{order by #orderField#}{ #orderDirection# }
+	</entry>
+
+
+	<!-- 库存分析时间维度图数据与表格数据导出(Y年下的季度Z查询)(季度Z下的月查询)(月下的日查询)(日查询)(R日M月Z季Y年)	-->
+	<entry key="suitAnalyse.salesDetailsTimeYZMR">
+		SELECT
+		SUM(IFNULL(b.order_number,0)) AS order_number, SUM(IFNULL(b.arrive_number,0)) AS arrive_number,
+		TRUNCATE(
+		AVG(((IFNULL(b.sales_number,0)+IFNULL(b.stock_number,0))/b.order_number)*100)
+		,2) AS arrive_rate,
+		TRUNCATE(
+		AVG((IFNULL(b.sales_number,0)/IFNULL(b.stock_number,0))*100),2) AS dynamic_rate ,
+		TRUNCATE(
+		AVG((IFNULL(b.sales_number,0)/IFNULL(b.arrive_number,0))*100)
+		,2) AS salesout_rate,
+		SUM(IFNULL(b.stock_number,0)) AS stock_number,
+		{#condition#} AS time_group,
+		DATE_FORMAT(b.sales_time,'%y')AS year_time
+		FROM
+		(SELECT
+		b.order_number,b.arrive_number,b.sales_number,b.stock_number,b.sales_time,b.upccode
+		FROM sales_stock_details b
+		WHERE
+		{ b.sales_time &gt;= '#beginTime#' }
+		{ AND b.sales_time &lt;= '#endTime#' }
+		{ AND b.brand_id = #brandId# }
+		GROUP BY b.upccode, DATE_FORMAT(b.sales_time,'%Y%m%d')
+		ORDER BY b.sales_time DESC) b
+		LEFT JOIN
+		product_info a
+		ON b.upccode=a.product_upccode
+		WHERE
+		1=1
+		{ AND a.quater = '#quater#' }
+		{ AND a.series= '#series#' }
+		GROUP BY
+		{#condition#} ORDER BY
+		time_group ASC
+	</entry>
+
+</properties>

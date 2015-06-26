@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+	<comment>daily total</comment>
+	<!-- 按类型 统计：销售数量、付款金额、吊牌金额、平均折扣 -->
+	<entry key="sales.product.type.daily.sql">
+		SELECT
+		SUM(s.sales_number) AS sales_number,
+		ROUND(SUM(IFNULL(s.sales_number, 0) * IFNULL(s.avg_current_price,0)),2) amount_to_pay,
+		ROUND(SUM(IFNULL(s.sales_number, 0) *IFNULL(p.tag_price, 0)),2) AS tag_price,
+		ROUND((SUM(s.sales_number) * SUM(s.avg_current_price))
+		/(SUM(s.sales_number) *SUM(p.tag_price))*100,2) AS avg_discount,
+		p.product_type
+		FROM sales_stock_details s LEFT JOIN product_info p ON s.upccode = p.product_upccode
+		WHERE p.product_type IS NOT NULL
+		AND p.product_type != ''
+		{AND s.sales_time >= '#startTime#'}
+		{AND s.sales_time &lt;'#endTime#'}
+		{AND p.brand_id = #brandId#}
+		GROUP BY p.product_type 
+	</entry>
+	
+	<!-- 按系列 统计：销售数量、付款金额、吊牌金额、平均折扣 、累计全年-->
+	<entry key="sales.series.daily.sql">
+	SELECT
+		SUM(s.sales_number) AS sales_number,
+		ROUND(SUM(IFNULL(s.sales_number, 0) * IFNULL(s.avg_current_price,0)),2) AS amount_to_pay,
+		ROUND(SUM(IFNULL(s.sales_number, 0) *IFNULL(p.tag_price, 0)),2) AS tag_price,
+		ROUND((SUM(s.sales_number) * SUM(s.avg_current_price))
+		/(SUM(s.sales_number) *SUM(p.tag_price))*100,2) AS avg_discount,
+		( 
+			SELECT ROUND(SUM(IFNULL(s1.sales_number, 0) * IFNULL(s1.avg_current_price,0)),2) 
+			  FROM sales_stock_details s1 LEFT JOIN product_info p1 
+	 		 ON s1.upccode = p1.product_upccode 
+			 WHERE p1.series = p.series
+			  AND p1.brand_id = p.brand_id
+			  { AND DATE_FORMAT(s1.sales_time, '%Y') = '#year#' }
+  		) AS year_amount_to_pay ,p.series
+		FROM sales_stock_details s LEFT JOIN product_info p ON s.upccode = p.product_upccode
+		WHERE series IS NOT NULL
+		AND p.series != ''
+		{AND s.sales_time >= '#startTime#'}
+		{AND s.sales_time &lt;'#endTime#'}
+		{AND p.brand_id = #brandId#}
+		GROUP BY p.series
+	</entry>
+	
+	<!-- 按Q季 ，统计：本月销售数量、累计销售、售馨率-->
+	<entry key="sales.quater.daily.sql">
+		SELECT 
+		   p.quater,SUM(s.sales_number) AS sales_number
+		   ,
+		   (
+		   	 SELECT  SUM(s1.sales_number) FROM sales_stock_details s1 
+		     LEFT JOIN product_info p1  ON s1.upccode = p1.product_upccode 
+		     WHERE p1.quater = p.quater 
+		   ) AS summary_sales_number,
+		  ROUND(SUM(s.sales_number) / SUM(s.arrive_number)  * 100,2) AS sold_rate 
+		FROM
+		  sales_stock_details s  LEFT JOIN product_info p ON s.upccode = p.product_upccode 
+		WHERE p.quater != '' 
+		  AND p.quater IS NOT NULL 
+		 { AND DATE_FORMAT(s.sales_time,'%Y-%m') = DATE_FORMAT('#startTime#','%Y-%m')}
+		 {AND p.brand_id = #brandId#}
+		GROUP BY p.quater 
+	</entry>
+	<!-- 按性别 统计：销售数量、占比-->
+	<entry key="sales.product.sex.daily.sql">
+		SELECT
+		SUM(s.sales_number) AS sales_number,
+		p.product_sex
+		FROM sales_stock_details s LEFT JOIN product_info p ON s.upccode = p.product_upccode
+		WHERE p.product_sex IS NOT NULL
+		AND p.product_sex != ''
+		{AND s.sales_time >= '#startTime#'}
+		{AND s.sales_time &lt;'#endTime#'}
+		{AND p.brand_id = #brandId#}
+		GROUP BY p.product_sex
+	</entry>
+	
+	<!-- 库存报表 -->
+	<entry key="sales.stock.daily.sql">
+		SELECT
+		SUM(s.stock_number) AS stock_Number
+		,SUM(p.tag_price) AS tag_price
+		{,#fieldName#}
+		FROM sales_stock_details s LEFT JOIN product_info p ON s.upccode = p.product_upccode
+		WHERE 1=1
+		{ AND #fieldName# IS NOT NULL}
+		{ AND #fieldName# != ''}
+		{ AND s.sales_time >= '#startTime#'}
+		{ AND s.sales_time &lt;'#endTime#'}
+		{AND p.brand_id = #brandId#}
+		{GROUP BY #fieldName#}
+	</entry>
+	
+	<!-- 当前Q3的到货率 -->
+	<entry key="gather.arrival.daily.sql">
+		SELECT 
+		  ROUND(
+		    SUM(s.arrive_number) / SUM(s.order_number) * 100,
+		    2
+		  ) AS arrival_rate
+		FROM
+		  sales_stock_details s 
+		WHERE  1 = 1 
+		  { AND s.brand_id = #brandId#}
+		  { AND s.sales_time >= '#startTime#'}
+		  { AND s.sales_time &lt;'#endTime#'}
+	</entry>
+</properties>

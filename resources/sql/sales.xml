@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+
+	<comment>sales</comment>
+	<entry key="nb.sales.details.datacleasing.sql">
+		SELECT * FROM
+		nb_sales_details d
+		WHERE 1 = 1
+		{ and DATE_FORMAT(d.update_time,'%Y-%m-%d %H') &gt;= '#startTime#' }
+		{ and DATE_FORMAT(d.update_time,'%Y-%m-%d %H') &lt;= '#endTime#' }
+		{ and platform_product_id in(#platformProductId#)}
+		{ and brand_id = #brandId#}
+	</entry>
+
+
+</properties>

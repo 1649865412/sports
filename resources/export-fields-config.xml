@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fields>
+	<!--
+		id : KEY name：即字段名与属性对应 title:标题
+		isExport:默认true即导出，false，不导出，即不解析不存入map中
+	-->
+	<field id="product_info">
+		<property name="productUpccode" title="69码" isExport="true" />
+		<property name="materialNumber" title="款号" />
+		<property name="productName" title="产品名称" />
+		<property name="inlineOr2ndline" title="Inline/2ndline" />
+		<property name="productLfPf" title="LF/PF" />
+		<property name="systemId" title="系统编号" />
+		<property name="quater" title="季节" />
+		<property name="productWeight" title="重量" />
+		<property name="series" title="系列" />
+		<property name="tagPrice" title="吊牌价" />
+		<property name="materialQuality" title="材质" />
+		<property name="productPosition" title="商品定位" />
+		<property name="productFunction" title="功能" />
+		<property name="onMarketMonth" title="上市月份" />
+		<property name="image" title="图片" />
+		<property name="onSalesTime" title="上架日期" />
+		<property name="productBrand" title="品牌" />
+		<property name="productPlace" title="产地" />
+		<property name="productColor" title="颜色" />
+		<property name="productSize" title="尺码" />
+		<property name="productType" title="类别" />
+		<property name="productSex" title="性别" />
+		<property name="productAttribute" title="属性" />
+		<property name="shoesBottom" title="鞋底" />
+		<property name="colorId" title="色号" />
+		<property name="productPlatformId" title="平台ID" />
+		<property name="remark" title="备注" />
+	</field>
+
+	<field id="nb_sales_details">
+		<property name="upccode" title="69码" />
+		<property name="materialNumber" title="款号" />
+		<property name="platformId" title="平台ID" />
+		<property name="marketStartTime" title="销售起止时间" />
+		<property name="marketEndTime" title="销售结束时间" />
+		<property name="salesNumber" title="销售数量" />
+		<property name="avgCurrentPrice" title="成交价" />
+		<property name="salesAmount" title="销售金额" />
+		<property name="storeHouse" title="仓库" />
+		<property name="enteringTime" title="入库时间" />
+		<property name="orderNumber" title="订货量" />
+		<property name="stockNumber" title="库存量" />
+		<property name="arriveNumber" title="到货量" />
+		<property name="predictArriveTime" title="预计到货期" />
+		<property name="factArriveTime" title="实际到货时间" />
+	</field>
+
+	<field id="sales_stock_details">
+		<property name="upccode" title="69码" />
+		<property name="materialNumber" title="款号" />
+		<property name="platformId" title="平台ID" />
+		<property name="salesTime" title="销售时间" />
+		<property name="salesNumber" title="销售数量" />
+		<property name="avgCurrentPrice" title="成交价" />
+		<property name="salesAmount" title="销售金额" />
+		<property name="storeHouse" title="仓库" />
+		<property name="enteringTime" title="入库时间" />
+		<property name="orderNumber" title="订货量" />
+		<property name="stockNumber" title="库存量" />
+		<property name="arriveNumber" title="到货量" />
+		<property name="predictArriveTime" title="预计到货期" />
+		<property name="factArriveTime" title="实际到货时间" />
+		<property name="remarks" title="备注" />
+	</field>
+	<field id="shop.analyse.monthly">
+		<property name="series" title="系列"/>
+		<property name="quater" title="季节"/>
+		<property name="product_type" title="种类"/>
+		<property name="inline_or2ndline" title="Line"/>
+		<property name="product_sex" title="性别"/>
+	</field>
+	<field id="taobao.trade.status">
+		<property name="WAIT_BUYER_PAY" title="等待买家支付"/>
+		<property name="WAIT_SELLER_SEND_GOODS" title="等待卖家发货,即:买家已付款"/>
+		<property name="SELLER_CONSIGNED_PART" title="卖家部分发货"/>
+		<property name="WAIT_BUYER_CONFIRM_GOODS" title="等待买家确认收货,即:卖家已发货"/>
+		<property name="TRADE_BUYER_SIGNED" title="买家已签收,货到付款专用"/>
+		<property name="TRADE_CLOSED" title="交易关闭"/>
+		<property name="TRADE_CLOSED_BY_TAOBAO" title="交易被淘宝关闭"/>
+		<property name="WAIT_PRE_AUTH_CONFIRM" title="余额宝0元购合约中"/>
+		<property name="ALL_CLOSED" title="余额宝0元购合约中"/>
+	</field>
+</fields>
